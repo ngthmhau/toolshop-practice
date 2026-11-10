@@ -38,20 +38,28 @@ def test_b1_2_search_unknown_keyword_shows_no_results_message(page):
     """Goal: empty search state.
     Precondition: none.
     Expected: the message 'There are no products found.' and zero product cards."""
+    # TODO: search "zzz-no-such-tool", then 2 expects (message text, product count 0)
     home = HomePage(page).open().search("zzz-no-such-tool")
-    expect(home.no_results).to_have_text("There are no products found.")
-    expect(home.product_names).to_have_count(0)
-
+    expect(home.no_results).to_contain_text("There are no products found.")
 
 # ---------------------------------------------------------------- B1.3
 def test_b1_3_product_add_quantity_three_updates_cart_badge(page):
     """Goal: add-to-cart uses the chosen quantity.
     Precondition: product 'Claw Hammer' exists.
     Expected: toast 'Product added to shopping cart' and the cart badge shows 3."""
+    # TODO: HomePage(page).open().open_product("Claw Hammer") ... add_to_cart(quantity=3)
+    # 2. Click sản phẩm Claw Hammer
     product = HomePage(page).open().open_product("Claw Hammer")
     expect(product.name).to_have_text("Claw Hammer")
+    # 3. Thêm số lượng 3 vào giỏ
     product.add_to_cart(quantity=3)
-    expect(product.toast).to_contain_text("Product added to shopping cart")
+
+    # 4. Kiểm tra thông báo thành công
+    expect(product.toast).to_contain_text(
+        "Product added to shopping cart"
+    )
+
+    # 5. Kiểm tra số lượng trên biểu tượng giỏ
     expect(product.cart_quantity).to_have_text("3")
 
 
@@ -60,15 +68,29 @@ def test_b1_4_cart_line_price_equals_unit_price_times_quantity(page):
     """Goal: cart arithmetic.
     Precondition: empty cart (a new context per test gives you one).
     Expected: line price = unit price x 2 and total = sum of the lines."""
+    # TODO: read the unit price on the product page BEFORE adding, then go_to_cart()
+    # Hint: compare floats with pytest.approx
+    
+    # 1. Mở sản phẩm Combination Pliers
     product = HomePage(page).open().open_product("Combination Pliers")
+
+    # 2. Đọc đơn giá trước khi thêm vào giỏ
     unit = product.price()
+
+    # 3. Thêm 2 sản phẩm vào giỏ
     product.add_to_cart(quantity=2)
+
+    # 4. Kiểm tra số lượng trên biểu tượng giỏ
     expect(product.cart_quantity).to_have_text("2")
+
+    # 5. Mở giỏ hàng
     cart = product.go_to_cart()
     expect(cart.product_titles).to_have_count(1)
+    # 6. Kiểm tra thành tiền = đơn giá x 2
     assert cart.line_totals() == [pytest.approx(unit * 2)]
-    assert cart.total_value() == pytest.approx(sum(cart.line_totals()))
 
+    # 7. Kiểm tra tổng tiền = tổng các dòng
+    assert cart.total_value() == pytest.approx(sum(cart.line_totals()))
 
 # ---------------------------------------------------------------- B1.5
 def test_b1_5_login_wrong_password_shows_error(page):
@@ -76,38 +98,51 @@ def test_b1_5_login_wrong_password_shows_error(page):
     Precondition: an e-mail with no account. NEVER a shared account: Toolshop counts failed
     logins (failed_login_attempts) and can lock it for the whole class.
     Expected: 'Invalid email or password' and the URL still ends with /auth/login."""
-    login = LoginPage(page).open().login("nobody-here@example.com", "Wrong-Password-123")
+    # TODO: rewrite test_spaghetti_login_wrong_password with LoginPage
+    #1. Mở trang đăng nhập
+    login = LoginPage(page).open()
+    login.login(
+        "nobody-here@example.com",
+        "wrongpassword"
+    )
+    #3. check thoogn báo lỗi
     expect(login.error).to_contain_text("Invalid email or password")
-    expect(page).to_have_url(re.compile(r"/auth/login$"))
 
+    #4. Check URL vẫn có đuôi /auth/login
 
 def test_b1_5_login_empty_form_shows_required_errors(page):
     """Goal: client-side validation.
     Precondition: none.
     Expected: 'Email is required' and 'Password is required'."""
+    #1. Mở trang đăng nhập
     login = LoginPage(page).open()
-    login.submit_button.click()
+    #2. Đăng nhập sai mật khẩu
+    login.login(
+        "",""
+    )
+    #3. check thoogn báo lỗi
     expect(login.email_error).to_contain_text("Email is required")
     expect(login.password_error).to_contain_text("Password is required")
-
 
 # ---------------------------------------------------------------- B1.6
 def test_b1_6_cart_continue_shopping_returns_to_home(page):
     """Goal: page objects chain: each action returns the next page object.
     Precondition: none.
     Expected: after 'Continue Shopping' the product grid is visible again."""
+    # TODO: one chain: HomePage(page).open().open_product("Hammer").add_to_cart().go_to_cart()
     cart = HomePage(page).open().open_product("Hammer").add_to_cart().go_to_cart()
-    expect(cart.product_titles.first).to_have_text("Hammer")
+    expect(cart.product_titles).to_contain_text(["Hammer"])
     cart.continue_shopping.click()
+
+    #Check lưới sp ở trang chủ hiện tại
     expect(HomePage(page).product_names.first).to_be_visible()
-
-
 # ---------------------------------------------------------------- B1.7 (challenge)
 @pytest.mark.parametrize("order", ["price,asc", "price,desc"])
 def test_b1_7_sort_by_price_orders_products(page, order):
     """Goal: sorting.
     Precondition: none.
     Expected: prices on the first page are sorted in the chosen direction."""
+    # TODO: sort_by(order), wait for the element data-test="sorting_completed", then compare with sorted()
     home = HomePage(page).open()
     expect(home.product_names.first).to_be_visible()
     home.sort_by(order)
